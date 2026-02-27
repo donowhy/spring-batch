@@ -4,10 +4,11 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:org/springframework/batch/core/schema-drop-postgresql.sql
   batch:
     jdbc:
       initialize-schema: always
+    job:
+      name: ${chunk.job.name:helloWorldJob} # 여기 기본값이 helloWorldJob이어야 함
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres
     driver-class-name: org.postgresql.Driver

@@ -12,7 +12,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Configuration
 public class SystemTerminationConfig {
     private AtomicInteger processesKilled = new AtomicInteger(0);
     private final int TERMINATION_TARGET = 5;
