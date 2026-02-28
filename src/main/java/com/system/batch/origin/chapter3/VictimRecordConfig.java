@@ -11,14 +11,19 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.Order;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Configuration
@@ -45,15 +50,33 @@ public class VictimRecordConfig {
                 .build();
     }
 
+//    @Bean
+//    public JdbcCursorItemReader<Victim> terminatedVictimReader() {
+//        return new JdbcCursorItemReaderBuilder<Victim>()
+//                .name("terminatedVictimReader")
+//                .dataSource(dataSource)
+//                .sql("SELECT * FROM victims WHERE status = ? AND terminated_at <= ?")
+//                .queryArguments(List.of("TERMINATED", LocalDateTime.now()))
+//                // 쿼리 결과(ResultSet)를 Java 객체(Victim)로 변환하는 역할
+//                // 커스텀 변환 로직이 필요하다면 빌더의 rowMapper() 메서드에 커스텀 RowMapper 구현체를 지정
+//                .beanRowMapper(Victim.class)
+//                .build();
+//    }
+
     @Bean
-    public JdbcCursorItemReader<Victim> terminatedVictimReader() {
-        return new JdbcCursorItemReaderBuilder<Victim>()
+    public JdbcPagingItemReader<Victim> terminatedVictimReader() {
+        return new JdbcPagingItemReaderBuilder<Victim>()
                 .name("terminatedVictimReader")
                 .dataSource(dataSource)
-                .sql("SELECT * FROM victims WHERE status = ? AND terminated_at <= ?")
-                .queryArguments(List.of("TERMINATED", LocalDateTime.now()))
-                // 쿼리 결과(ResultSet)를 Java 객체(Victim)로 변환하는 역할
-                // 커스텀 변환 로직이 필요하다면 빌더의 rowMapper() 메서드에 커스텀 RowMapper 구현체를 지정
+                .pageSize(5)
+                .selectClause("select id, name, process_id, terminated_at, status")
+                .fromClause("where status = :status and terminated_at <= :terminatedAt")
+                // Keyset Pagination 방식 지원
+                .sortKeys(Map.of("id", Order.ASCENDING))
+                .parameterValues(Map.of(
+                        "status", "TERMINATED",
+                        "terminatedAt", LocalDateTime.now()
+                ))
                 .beanRowMapper(Victim.class)
                 .build();
     }
