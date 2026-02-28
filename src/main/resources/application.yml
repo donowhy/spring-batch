@@ -10,7 +10,7 @@ spring:
     job:
       name: ${chunk.job.name:helloWorldJob} # 여기 기본값이 helloWorldJob이어야 함
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+    url: jdbc:postgresql://localhost:5432/postgres?reWriteBatchedInserts=true
     driver-class-name: org.postgresql.Driver
     username: root
     password: password
