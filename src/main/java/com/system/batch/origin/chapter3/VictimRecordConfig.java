@@ -122,15 +122,4 @@ public class VictimRecordConfig {
             }
         };
     }
-
-    @NoArgsConstructor
-    @Data
-    public static class Victim {
-        private Long id;
-        private String name;
-        private String processId;
-        private LocalDateTime terminatedAt;
-        private String status;
-    }
-
 }
