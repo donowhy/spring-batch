@@ -13,8 +13,10 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.Order;
+import org.springframework.batch.item.database.PagingQueryProvider;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
+import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -63,22 +65,53 @@ public class VictimRecordConfig {
 //                .build();
 //    }
 
+//    @Bean
+//    public JdbcPagingItemReader<Victim> terminatedVictimReader() {
+//        return new JdbcPagingItemReaderBuilder<Victim>()
+//                .name("terminatedVictimReader")
+//                .dataSource(dataSource)
+//                .pageSize(5)
+//                .selectClause("select id, name, process_id, terminated_at, status")
+//                .fromClause("where status = :status and terminated_at <= :terminatedAt")
+//                // Keyset Pagination 방식 지원
+//                .sortKeys(Map.of("id", Order.ASCENDING))
+//                .parameterValues(Map.of(
+//                        "status", "TERMINATED",
+//                        "terminatedAt", LocalDateTime.now()
+//                ))
+//                .beanRowMapper(Victim.class)
+//                .build();
+//    }
+
     @Bean
     public JdbcPagingItemReader<Victim> terminatedVictimReader() {
         return new JdbcPagingItemReaderBuilder<Victim>()
                 .name("terminatedVictimReader")
                 .dataSource(dataSource)
                 .pageSize(5)
-                .selectClause("select id, name, process_id, terminated_at, status")
-                .fromClause("where status = :status and terminated_at <= :terminatedAt")
-                // Keyset Pagination 방식 지원
-                .sortKeys(Map.of("id", Order.ASCENDING))
+                .queryProvider(pagingQueryProvider(dataSource)) // 커스텀 PagingQueryProvider 적용
                 .parameterValues(Map.of(
                         "status", "TERMINATED",
                         "terminatedAt", LocalDateTime.now()
                 ))
                 .beanRowMapper(Victim.class)
                 .build();
+    }
+
+    private PagingQueryProvider pagingQueryProvider(DataSource dataSource) {
+        SqlPagingQueryProviderFactoryBean queryProviderFactory = new SqlPagingQueryProviderFactoryBean();
+
+        queryProviderFactory.setDataSource(dataSource);
+        queryProviderFactory.setSelectClause("SELECT id, name, process_id, terminated_at, status");
+        queryProviderFactory.setFromClause("FROM victims");
+        queryProviderFactory.setWhereClause("WHERE status = :status AND terminated_at <= :terminatedAt");
+        queryProviderFactory.setSortKeys(Map.of("id", Order.ASCENDING));
+
+        try {
+            return queryProviderFactory.getObject();
+        } catch (Exception e) {
+            throw new IllegalStateException("PagingQueryProvider 빈 생성에 실패했습니다.", e);
+        }
     }
 
     @Bean
@@ -89,7 +122,6 @@ public class VictimRecordConfig {
             }
         };
     }
-
 
     @NoArgsConstructor
     @Data
